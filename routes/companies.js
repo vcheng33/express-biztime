@@ -95,7 +95,7 @@ router.delete("/:code", async function (req, res, next) {
         RETURNING code, name, description`,
         [req.params.code],
     );
-    console.log("result", result)
+    // console.log("result", result)
     if (result.rows.length === 0) {
         throw new NotFoundError()
     }
