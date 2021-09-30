@@ -5,6 +5,9 @@ const express = require("express");
 const router = express.Router();
 const { NotFoundError } = require("../expressError");
 
+/**
+ * Get companies, returning {companies: [{code, name}, ...]}
+ */
 router.get("/",
     async function (req, res, next) {
 
@@ -15,6 +18,9 @@ router.get("/",
         return res.json({ companies });
     })
 
+/**
+ * Get single company, returning {company: {code, name, description}}
+ */
 router.get("/:code",
     async function (req, res, next) {
         let code = req.params.code;
@@ -31,6 +37,9 @@ router.get("/:code",
         return res.json({ company });
     })
 
+/**
+ * Create company, returning {company: {code, name, description}}
+ */
 router.post("/", async function (req, res, next) {
     const { code, name, description } = req.body;
 
@@ -44,7 +53,9 @@ router.post("/", async function (req, res, next) {
     return res.status(201).json({ company });
 });
 
-
+/**
+ * Update company, returning {company: {code, name, description}}
+ */
 router.put("/:code", async function (req, res, next) {
     const { name, description } = req.body;
     const result = await db.query(
@@ -61,5 +72,22 @@ router.put("/:code", async function (req, res, next) {
     }
     return res.json({ company });
 });
+/**
+ * Delete company, returning {status: "deleted"}
+ */
+router.delete("/:code", async function (req, res, next) {
+    
+    const result = await db.query(
+      `DELETE FROM companies 
+        WHERE code = $1
+        RETURNING code, name, description`,
+      [req.params.code],
+    );
+    console.log("result", result)
+    if (result.rows.length === 0) {
+        throw new NotFoundError()
+    }
+    return res.json({ status: "Deleted" });
+  });
 
 module.exports = router;
