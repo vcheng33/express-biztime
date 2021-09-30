@@ -5,6 +5,8 @@ const express = require("express");
 const router = express.Router();
 const { NotFoundError } = require("../expressError");
 
+
+// TO DO: ADDING ORDER BY
 /**
  * Get companies, returning {companies: [{code, name}, ...]}
  */
@@ -23,16 +25,25 @@ router.get("/",
  */
 router.get("/:code",
     async function (req, res, next) {
-        let code = req.params.code;
+        const code = req.params.code;
         const results = await db.query(
             `SELECT code, name, description
                FROM companies
                WHERE code = $1`, [code]);
         const company = results.rows[0];
 
+        const iResults = await db.query(
+            `SELECT id, comp_code, amt, paid, add_date, paid_date
+            FROM invoices
+            WHERE comp_code = $1
+            ORDER BY id`, [company.code]);
+        const invoices = iResults.rows;
+
         if (results.rows.length === 0) {
             throw new NotFoundError()
         }
+
+        company.invoices = invoices;
 
         return res.json({ company });
     })
@@ -72,22 +83,23 @@ router.put("/:code", async function (req, res, next) {
     }
     return res.json({ company });
 });
+
 /**
- * Delete company, returning {status: "deleted"}
+ * Delete company, returning {status: "Deleted"}
  */
 router.delete("/:code", async function (req, res, next) {
-    
+
     const result = await db.query(
-      `DELETE FROM companies 
+        `DELETE FROM companies 
         WHERE code = $1
         RETURNING code, name, description`,
-      [req.params.code],
+        [req.params.code],
     );
     console.log("result", result)
     if (result.rows.length === 0) {
         throw new NotFoundError()
     }
     return res.json({ status: "Deleted" });
-  });
+});
 
 module.exports = router;
