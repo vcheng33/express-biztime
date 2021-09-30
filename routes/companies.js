@@ -32,17 +32,18 @@ router.get("/:code",
                WHERE code = $1`, [code]);
         const company = results.rows[0];
 
+        if (results.rows.length === 0) {
+            throw new NotFoundError()
+        }
+
         const iResults = await db.query(
             `SELECT id, comp_code, amt, paid, add_date, paid_date
             FROM invoices
             WHERE comp_code = $1
             ORDER BY id`, [company.code]);
         const invoices = iResults.rows;
-
-        if (results.rows.length === 0) {
-            throw new NotFoundError()
-        }
-
+        console.log("results.rows:", results.rows);
+        
         company.invoices = invoices;
 
         return res.json({ company });

@@ -15,18 +15,21 @@ beforeEach(async function () {
     testCompany = results.rows[0];
 
     const iResults = await db.query(
-        `INSERT INTO invoices (comp_code, amt)
-            VALUES ('fb', '200.00')
+        `INSERT INTO invoices (comp_code, amt, add_date)
+            VALUES ('fb', '200.00', '2021-01-01')
             RETURNING id, comp_code, amt, paid, add_date, paid_date`
     )
-    testInvoice = JSON.stringify(iResults.rows);
-    testInvoice = JSON.parse(testInvoice);
+    testInvoice = iResults.rows;
+    // testInvoice = JSON.parse(testInvoice);
 });
 
 afterEach(async function () {
     await db.query(`DELETE FROM companies`)
 });
 
+afterAll(async function () {
+    await db.end();
+});
 
 describe("GET /companies", function () {
     it("Gets a list of companies", async function () {
@@ -47,21 +50,31 @@ describe("GET /companies", function () {
 describe("GET /companies/fb", function () {
     it("Gets info of single company", async function () {
         const resp = await request(app).get(`/companies/fb`);
-        console.log("resp.body", resp.body)
-        console.log("testInvoice", testInvoice)
+        // console.log("resp.body", resp.body)
+        // console.log("testInvoice", testInvoice)
         expect(resp.body).toEqual({
             company:
             {
                 code: "fb",
                 name: "Facebook",
                 description: "soul sucking social media",
-                invoices: testInvoice
+                invoices: [{
+                    id: testInvoice[0].id,
+                    comp_code: "fb",
+                    amt: "200.00",
+                    paid: false,
+                    add_date: '2021-01-01T08:00:00.000Z',
+                    paid_date: null
+                }]
             },
 
         });
     });
+    it("Responds with 404 if can't find item", async function () {
+        const response = await request(app).get(`/companies/0`);
+        expect(response.statusCode).toEqual(404);
+    });
 });
-
 
 describe("POST /companies", function () {
     it("Creates a new company", async function () {
@@ -100,7 +113,6 @@ describe("PUT /companies/:code", function () {
         });
     });
 });
-
 
 describe("DELETE /companies/:code", function () {
     it("Deletes a single company", async function () {
